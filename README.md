@@ -49,14 +49,19 @@ The project follows a professional, end-to-end data science workflow: from raw d
 ```
 employee-attrition/
 │
-├── data/                         ← Raw and processed datasets + saved plots
-│   ├── attrition.csv             ← Original IBM HR dataset
-│   ├── X_train_final.csv         ← Processed training features (post-SMOTE)
-│   ├── X_test_final.csv          ← Processed test features
-│   ├── y_train.csv               ← Training labels
-│   ├── y_test.csv                ← Test labels
+├── .devcontainer/
+│   └── devcontainer.json         ← GitHub Codespaces configuration
+│
+├── data/                         ← Datasets + saved plots
+│   ├── attrition.csv             ← Original IBM HR dataset ⚠️ gitignored — download separately
+│   ├── X_train.csv               ← Processed training features (pre-feature engineering)
+│   ├── X_test.csv                ← Processed test features (pre-feature engineering)
+│   ├── X_train_final.csv         ← Final training features (post-SMOTE + feature engineering)
+│   ├── X_test_final.csv          ← Final test features
+│   ├── y_train.csv               ← Training labels (post-SMOTE, balanced)
+│   ├── y_test.csv                ← Test labels (original distribution)
 │   ├── model_results.csv         ← Model comparison table
-│   └── *.png                     ← All saved visualizations
+│   └── *.png                     ← All saved visualizations (EDA, SHAP, model plots)
 │
 ├── notebooks/
 │   ├── 01_EDA.ipynb              ← Exploratory Data Analysis
@@ -66,19 +71,24 @@ employee-attrition/
 │   └── 05_SHAP_Interpretability.ipynb ← SHAP explanations
 │
 ├── models/                       ← Saved model artifacts
-│   ├── best_model.pkl            ← Best performing model
+│   ├── best_model.pkl            ← Best performing model (Random Forest)
 │   ├── all_models.pkl            ← All three trained models
 │   ├── scaler.pkl                ← Fitted StandardScaler
-│   ├── imputer.pkl               ← Fitted SimpleImputer
+│   ├── imputer.pkl               ← Fitted SimpleImputer (NaN guard)
 │   ├── selected_features.pkl     ← Final 30 selected feature names
+│   ├── engineered_feature_names.pkl ← Names of the 7 engineered features
+│   ├── feature_columns.pkl       ← Full feature column list (post-encoding)
 │   ├── shap_explainer.pkl        ← SHAP TreeExplainer
-│   └── shap_values.npy           ← Precomputed SHAP values
+│   └── shap_values.npy           ← Precomputed SHAP values (test set)
 │
 ├── app/
 │   └── app.py                    ← Streamlit web application
 │
 ├── assets/                       ← Screenshots for this README
-├── requirements.txt
+│   ├── screenshot_prediction.png ← Prediction tab screenshot
+│   └── screenshot_performance.png ← Model performance tab screenshot
+│
+├── requirements.txt              ← Project dependencies
 ├── .gitignore
 └── README.md
 ```
@@ -99,6 +109,8 @@ employee-attrition/
 | Missing values | None |
 
 The dataset covers a wide range of employee attributes including demographics, job role, compensation, tenure, satisfaction scores, and work-life balance ratings — making it rich enough for meaningful feature engineering and modeling.
+
+> ⚠️ The raw dataset (`attrition.csv`) is excluded from this repository via `.gitignore` as it is sourced from Kaggle. See the [Run Locally](#-run-locally) section for download instructions.
 
 ---
 
@@ -142,7 +154,7 @@ Three models were trained and evaluated using **5-fold stratified cross-validati
 | Model | CV ROC-AUC | Test ROC-AUC | Test F1 | Test Recall |
 |---|---|---|---|---|
 | Logistic Regression | 0.9236 | 0.7206 | 0.3762 | 0.4043 |
-| Random Forest | 0.9658 | 0.7309 | 0.3250 | 0.2766 |
+| Random Forest | 0.9658 | **0.7309** | 0.3250 | 0.2766 |
 | XGBoost | 0.9648 | 0.7014 | 0.3291 | 0.2766 |
 
 > **Primary metric: ROC-AUC** — chosen over accuracy because the dataset is imbalanced. A naive classifier predicting "Stayed" for every employee achieves 84% accuracy but has zero business value.
@@ -213,7 +225,9 @@ The interactive Streamlit app is live at <a href="https://employee-attrition-pre
 
 ## 🚀 Run Locally
 
-If you want to run the project on your own machine:
+### Prerequisites
+- Python 3.8+
+- Git
 
 ### 1. Clone the repository
 ```bash
@@ -238,9 +252,12 @@ pip install -r requirements.txt
 ```
 
 ### 4. Download the dataset
-Download `WA_Fn-UseC_-HR-Employee-Attrition.csv` from [Kaggle](https://www.kaggle.com/datasets/pavansubhasht/ibm-hr-analytics-attrition-dataset), rename it to `attrition.csv`, and place it in the `data/` folder.
+Download `WA_Fn-UseC_-HR-Employee-Attrition.csv` from [Kaggle](https://www.kaggle.com/datasets/pavansubhasht/ibm-hr-analytics-attrition-dataset), rename it to `attrition.csv`, and place it inside the `data/` folder.
+
+> This file is excluded from the repository via `.gitignore` due to Kaggle's terms of use.
 
 ### 5. Run the notebooks in order
+Open the `notebooks/` folder in VS Code or Jupyter and run each notebook sequentially:
 ```
 01_EDA.ipynb
 02_Preprocessing.ipynb
@@ -248,17 +265,29 @@ Download `WA_Fn-UseC_-HR-Employee-Attrition.csv` from [Kaggle](https://www.kaggl
 04_Model_Building.ipynb
 05_SHAP_Interpretability.ipynb
 ```
+Each notebook saves its outputs automatically so the next one can load them directly.
 
 ### 6. Launch the app
 ```bash
 streamlit run app/app.py
 ```
+The app opens automatically at `http://localhost:8501`
+
+---
+
+## ☁️ Open in GitHub Codespaces
+
+This repository includes a `.devcontainer` configuration. Click the button below to open it directly in a fully configured cloud environment — no local setup needed:
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/emaadkalantarii/employee-attrition)
+
+The Codespaces environment automatically installs all dependencies and launches the Streamlit app on startup.
 
 ---
 
 ## 📂 Reproducing Results
 
-All notebooks are self-contained and run sequentially. Each notebook saves its outputs (processed data, trained models, plots) so the next one can load them directly. No notebook depends on anything except the outputs of the previous one and the original `attrition.csv`.
+All notebooks are self-contained and run sequentially. Each notebook saves its outputs (processed data, trained models, plots) so the next one can load them directly. The only external dependency is `attrition.csv` in the `data/` folder — everything else is already committed to this repository.
 
 ---
 
